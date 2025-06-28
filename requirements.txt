@@ -1,0 +1,4 @@
+flask
+python-gedcom
+pytest
+ruff

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEDCOM Viewer</title>
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vis-network@9.1.12/dist/vis-network.min.js"></script>
+    <style type="text/css">
+        #mynetwork {
+            width: 900px;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Genealogy App</a>
+            <ul id="nav-mobile" class="right hide-on-med-and-down">
+                <li><a href="{{ url_for('index') }}">Home</a></li>
+            </ul>
+        </div>
+    </nav>
+    <div class="container">
+        <h1 class="center-align">GEDCOM Data</h1>
+        <div class="row">
+            <div class="col s12">
+                <h2>Individuals</h2>
+                <ul class="collection">
+                    {% for individual in individuals %}
+                        <li class="collection-item">
+                            <div>
+                                {{ individual.name }} ({{ individual.id }}) - Born: {{ individual.birth_date }} in {{ individual.birth_place }}
+                                <a href="{{ url_for('edit_individual', filename=filename, individual_id=individual.id) }}" class="secondary-content"><i class="material-icons">edit</i></a>
+                                <form action="{{ url_for('delete_individual', filename=filename, individual_id=individual.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn-flat secondary-content"><i class="material-icons">delete</i></button>
+                                </form>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <p><a class="waves-effect waves-light btn" href="{{ url_for('add_individual', filename=filename) }}">Add New Individual</a></p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col s12">
+                <h2>Family Graph</h2>
+                <div id="mynetwork"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Materialize JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script type="text/javascript">
+        var nodes = [];
+        var edges = [];
+
+        {% for individual in individuals %}
+            nodes.push({id: "{{ individual.id }}", label: {{ individual.name | tojson }}.replace(/ /g, " ").replace(/ /g, " ") + "\n(" + {{ individual.birth_date | tojson }}.replace(/ /g, " ").replace(/ /g, " ") + " - " + {{ individual.birth_place | tojson }}.replace(/ /g, " ").replace(/ /g, " ") + ")" });
+        {% endfor %}
+
+        {% for family in families %}
+            nodes.push({id: "{{ family.id }}", label: "Family", shape: "box"});
+            {% if family.husband_id %}
+                edges.push({from: "{{ family.husband_id }}", to: "{{ family.id }}", arrows:"to", label: "Husband"});
+            {% endif %}
+            {% if family.wife_id %}
+                edges.push({from: "{{ family.wife_id }}", to: "{{ family.id }}", arrows:"to", label: "Wife"});
+            {% endif %}
+            {% for child_id in family.children_ids %}
+                edges.push({from: "{{ family.id }}", to: "{{ child_id }}", arrows:"to", label: "Child"});
+            {% endfor %}
+        {% endfor %}
+
+        // create a network
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: new vis.DataSet(nodes),
+            edges: new vis.DataSet(edges)
+        };
+        var options = {};
+        var network = new vis.Network(container, data, options);
+    </script>
+</body>
+</html>
